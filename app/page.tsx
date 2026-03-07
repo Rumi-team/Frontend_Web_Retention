@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -66,13 +65,8 @@ export default function LandingPage() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <Image
-            src="/rumi_logo.png"
-            alt="Rumi"
-            width={80}
-            height={40}
-            className="h-8 w-auto"
-          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/rumi_logo.png" alt="Rumi" className="h-8 w-auto" />
           <Link
             href="/login"
             className="bg-yellow-400 text-black px-6 h-10 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
@@ -675,13 +669,8 @@ export default function LandingPage() {
       <footer className="w-full py-12 bg-black border-t border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <Image
-              src="/rumi_logo.png"
-              alt="Rumi"
-              width={80}
-              height={40}
-              className="h-8 w-auto opacity-70"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rumi_logo.png" alt="Rumi" className="h-8 w-auto opacity-70" />
             <p className="text-gray-600 text-sm mt-1">
               The Retention Layer for the Agent Era
             </p>

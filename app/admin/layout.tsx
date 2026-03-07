@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -58,7 +57,8 @@ export default function AdminLayout({
       <aside className="w-56 border-r border-gray-800 flex flex-col">
         <div className="p-4 border-b border-gray-800">
           <Link href="/admin/retention" className="flex items-center gap-2">
-            <Image src="/rumi_logo.png" alt="Rumi" width={64} height={32} className="h-6 w-auto" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rumi_logo.png" alt="Rumi" className="h-6 w-auto" />
             <span className="text-xs text-gray-500">Retention</span>
           </Link>
         </div>
