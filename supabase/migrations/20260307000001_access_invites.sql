@@ -1,9 +1,16 @@
--- Access code gating tables (same schema as Frontend_Web_App)
+-- Access code gating: invite-based system with auto-generated codes
+-- Each row = one invited person; code is auto-generated if not provided
+
 CREATE TABLE IF NOT EXISTS public.access_codes (
   id             uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  code           TEXT NOT NULL UNIQUE,
-  assigned_email TEXT,
-  max_uses       INTEGER,
+  name           TEXT,                          -- invited person's name
+  assigned_email TEXT,                          -- their email (optional, enforces match)
+  code           TEXT NOT NULL UNIQUE DEFAULT   -- 8-char random uppercase code
+                   upper(
+                     substring(md5(random()::text || gen_random_uuid()::text), 1, 4) ||
+                     substring(md5(random()::text || gen_random_uuid()::text), 1, 4)
+                   ),
+  max_uses       INTEGER DEFAULT 1,
   used_count     INTEGER NOT NULL DEFAULT 0,
   is_active      BOOLEAN NOT NULL DEFAULT true,
   expires_at     TIMESTAMPTZ,
@@ -18,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.access_code_redemptions (
   UNIQUE(user_id)
 );
 
--- Seed default access code
-INSERT INTO public.access_codes (code, assigned_email, max_uses, is_active)
-VALUES ('RUMI2026', 'ali@rumi.team', 1, true)
+-- Seed: Ali's invite code
+INSERT INTO public.access_codes (name, assigned_email, code, max_uses, is_active)
+VALUES ('Ali Naeini', 'ali@rumi.team', 'RUMI2026', 1, true)
 ON CONFLICT (code) DO NOTHING;

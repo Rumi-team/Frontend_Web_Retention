@@ -47,6 +47,9 @@ function VerifyForm() {
     }
   }
 
+  const isAppleRelay = email.includes("privaterelay.appleid.com");
+  const displayEmail = isAppleRelay ? "your Apple ID" : email;
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-sm">
@@ -55,10 +58,13 @@ function VerifyForm() {
         <h1 className="text-white text-lg font-semibold mb-1">Access Required</h1>
         {email && (
           <div className="flex items-center justify-between mb-4">
-            <span className="text-yellow-400 text-sm truncate max-w-[200px]">{email}</span>
+            <p className="text-gray-400 text-sm">
+              Signed in with{" "}
+              <span className="text-yellow-400">{displayEmail}</span>
+            </p>
             <button
               onClick={handleSignOut}
-              className="text-gray-500 text-xs hover:text-gray-300 transition-colors ml-2 shrink-0"
+              className="text-gray-500 text-xs hover:text-gray-300 transition-colors ml-3 shrink-0"
             >
               Sign out
             </button>
@@ -92,8 +98,8 @@ function VerifyForm() {
         </form>
         <p className="text-gray-600 text-xs mt-6 text-center">
           Need access?{" "}
-          <a href="mailto:ali@rumi.team" className="text-gray-500 hover:text-yellow-400 transition-colors">
-            Contact ali@rumi.team
+          <a href="mailto:support@rumi.team" className="text-gray-500 hover:text-yellow-400 transition-colors">
+            Contact support@rumi.team
           </a>
         </p>
       </div>
