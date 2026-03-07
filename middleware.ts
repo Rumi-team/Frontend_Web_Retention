@@ -7,8 +7,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow auth callback and login without session
+  // Allow landing page, login, and auth callback without session
   if (
+    req.nextUrl.pathname === "/" ||
     req.nextUrl.pathname === "/login" ||
     req.nextUrl.pathname.startsWith("/auth/callback")
   ) {
