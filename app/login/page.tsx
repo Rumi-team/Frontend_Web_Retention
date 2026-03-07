@@ -1,10 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (err) setError(decodeURIComponent(err));
+  }, [searchParams]);
 
   async function signInWithGoogle() {
     setLoading(true);
@@ -31,13 +38,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-sm">
-        <h1 className="text-xl font-bold text-yellow-400 mb-2">
-          Retention Dashboard
-        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/rumi_logo.png" alt="Rumi" className="h-10 w-auto mb-4" />
         <p className="text-gray-400 text-sm mb-6">
-          Sign in to access the admin dashboard
+          Sign in to access the dashboard
         </p>
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+        {error && (
+          <div className="bg-red-400/10 border border-red-400/20 rounded p-3 mb-4">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
         <button
           onClick={signInWithGoogle}
           disabled={loading}
@@ -65,5 +75,19 @@ export default function LoginPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
