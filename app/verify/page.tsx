@@ -1,0 +1,102 @@
+"use client";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+function VerifyForm() {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) router.push("/login");
+      else setEmail(user.email || "");
+    });
+  }, [router]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const res = await fetch("/api/auth/verify-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code.trim().toUpperCase() }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      router.push("/admin/retention");
+      router.refresh();
+    } else {
+      setError(data.error || "Invalid access code");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/rumi_logo.png" alt="Rumi" className="h-10 w-auto mb-4" />
+        <h1 className="text-white text-lg font-semibold mb-1">Access Required</h1>
+        {email && (
+          <p className="text-gray-400 text-sm mb-4">
+            Signed in as <span className="text-yellow-400">{email}</span>
+          </p>
+        )}
+        <p className="text-gray-400 text-sm mb-6">
+          Enter your access code to continue to the dashboard.
+        </p>
+        {error && (
+          <div className="bg-red-400/10 border border-red-400/20 rounded p-3 mb-4">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Enter access code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded py-2 px-3 text-white text-sm focus:outline-none focus:border-yellow-400 tracking-widest font-mono uppercase"
+            autoFocus
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading || !code.trim()}
+            className="w-full bg-yellow-400 text-black rounded py-2 text-sm font-medium hover:bg-yellow-300 disabled:opacity-50"
+          >
+            {loading ? "Verifying..." : "Continue →"}
+          </button>
+        </form>
+        <p className="text-gray-600 text-xs mt-6 text-center">
+          Need access?{" "}
+          <a href="mailto:ali@rumi.team" className="text-gray-500 hover:text-yellow-400 transition-colors">
+            Contact ali@rumi.team
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      }
+    >
+      <VerifyForm />
+    </Suspense>
+  );
+}

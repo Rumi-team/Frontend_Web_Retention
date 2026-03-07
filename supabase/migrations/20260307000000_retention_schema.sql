@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS retention.events (
   timestamp   TIMESTAMPTZ NOT NULL DEFAULT now(),
   properties  JSONB DEFAULT '{}'::jsonb
 );
-CREATE INDEX idx_events_user    ON retention.events (provider_user_id);
-CREATE INDEX idx_events_type    ON retention.events (event_type);
-CREATE INDEX idx_events_ts      ON retention.events (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_events_user    ON retention.events (provider_user_id);
+CREATE INDEX IF NOT EXISTS idx_events_type    ON retention.events (event_type);
+CREATE INDEX IF NOT EXISTS idx_events_ts      ON retention.events (timestamp DESC);
 
 -- 2. Decisions: bandit actions chosen
 CREATE TABLE IF NOT EXISTS retention.decisions (
@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS retention.decisions (
   was_exploration       BOOLEAN DEFAULT false,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_decisions_user ON retention.decisions (provider_user_id);
-CREATE INDEX idx_decisions_ts   ON retention.decisions (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_decisions_user ON retention.decisions (provider_user_id);
+CREATE INDEX IF NOT EXISTS idx_decisions_ts   ON retention.decisions (created_at DESC);
 
 -- 3. Rewards: feedback signal per decision
 CREATE TABLE IF NOT EXISTS retention.rewards (
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS retention.rewards (
   reward_value  DOUBLE PRECISION NOT NULL,
   timestamp     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_rewards_decision ON retention.rewards (decision_id);
-CREATE INDEX idx_rewards_user     ON retention.rewards (provider_user_id);
+CREATE INDEX IF NOT EXISTS idx_rewards_decision ON retention.rewards (decision_id);
+CREATE INDEX IF NOT EXISTS idx_rewards_user     ON retention.rewards (provider_user_id);
 
 -- 4. Agent posteriors: Thompson sampling beta params
 CREATE TABLE IF NOT EXISTS retention.agent_posteriors (
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS retention.agent_posteriors (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (provider_user_id, dimension, option)
 );
-CREATE INDEX idx_posteriors_user ON retention.agent_posteriors (provider_user_id);
+CREATE INDEX IF NOT EXISTS idx_posteriors_user ON retention.agent_posteriors (provider_user_id);
 
 -- 5. Flag assignments: A/B test variant allocation
 CREATE TABLE IF NOT EXISTS retention.flag_assignments (
@@ -66,8 +66,8 @@ CREATE TABLE IF NOT EXISTS retention.flag_assignments (
   assigned_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (provider_user_id, flag_name)
 );
-CREATE INDEX idx_flags_user ON retention.flag_assignments (provider_user_id);
-CREATE INDEX idx_flags_name ON retention.flag_assignments (flag_name);
+CREATE INDEX IF NOT EXISTS idx_flags_user ON retention.flag_assignments (provider_user_id);
+CREATE INDEX IF NOT EXISTS idx_flags_name ON retention.flag_assignments (flag_name);
 
 -- 6. Control matches: incremental lift measurement
 CREATE TABLE IF NOT EXISTS retention.control_matches (
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS retention.control_matches (
   incremental_lift  DOUBLE PRECISION,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_control_decision ON retention.control_matches (decision_id);
+CREATE INDEX IF NOT EXISTS idx_control_decision ON retention.control_matches (decision_id);
 
 -- 7. Policy config: versioned bandit configuration
 CREATE TABLE IF NOT EXISTS retention.policy_config (
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS retention.policy_config (
   published_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   notes         TEXT DEFAULT ''
 );
-CREATE INDEX idx_config_active ON retention.policy_config (is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_config_active ON retention.policy_config (is_active) WHERE is_active = true;
 
 -- Seed default policy config
 INSERT INTO retention.policy_config (version, config_json, is_active, published_by, notes)

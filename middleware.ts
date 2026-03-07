@@ -16,8 +16,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow signout API
-  if (req.nextUrl.pathname === "/api/auth/signout") {
+  // Allow signout and verify-code APIs without access check
+  if (
+    req.nextUrl.pathname === "/api/auth/signout" ||
+    req.nextUrl.pathname === "/api/auth/verify-code" ||
+    req.nextUrl.pathname === "/verify"
+  ) {
     return NextResponse.next();
   }
 
@@ -61,6 +65,14 @@ export async function middleware(req: NextRequest) {
   // For UI routes, redirect to login if not authenticated
   if (!user) {
     return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  // Redirect to /verify if user hasn't entered their access code yet
+  if (!user.app_metadata?.access_verified) {
+    if (req.nextUrl.pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Access not granted" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/verify", req.url));
   }
 
   return response;

@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
   }
 
-  const response = NextResponse.redirect(`${origin}${next}`);
+  // Default redirect: /verify (access code check), unless access already granted
+  const verifyRedirect = NextResponse.redirect(`${origin}/verify`);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            verifyRedirect.cookies.set(name, value, options);
           });
         },
       },
@@ -49,5 +50,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return response;
+  // Check if user already has access granted (re-login case)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.app_metadata?.access_verified) {
+    const response = NextResponse.redirect(`${origin}${next}`);
+    verifyRedirect.cookies.getAll().forEach(({ name, value, ...options }) => {
+      response.cookies.set(name, value, options);
+    });
+    return response;
+  }
+
+  return verifyRedirect;
 }
