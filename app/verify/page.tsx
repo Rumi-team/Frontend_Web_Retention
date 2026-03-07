@@ -10,13 +10,21 @@ function VerifyForm() {
   const [email, setEmail] = useState("");
   const router = useRouter();
 
+  const supabase = createSupabaseBrowserClient();
+
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) router.push("/login");
       else setEmail(user.email || "");
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,9 +54,15 @@ function VerifyForm() {
         <img src="/rumi_logo.png" alt="Rumi" className="h-10 w-auto mb-4" />
         <h1 className="text-white text-lg font-semibold mb-1">Access Required</h1>
         {email && (
-          <p className="text-gray-400 text-sm mb-4">
-            Signed in as <span className="text-yellow-400">{email}</span>
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-yellow-400 text-sm truncate max-w-[200px]">{email}</span>
+            <button
+              onClick={handleSignOut}
+              className="text-gray-500 text-xs hover:text-gray-300 transition-colors ml-2 shrink-0"
+            >
+              Sign out
+            </button>
+          </div>
         )}
         <p className="text-gray-400 text-sm mb-6">
           Enter your access code to continue to the dashboard.
