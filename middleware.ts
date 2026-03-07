@@ -1,35 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
-
-export function middleware(req: NextRequest) {
-  // Allow cron calls through (they use CRON_SECRET in Authorization header)
+export async function middleware(req: NextRequest) {
+  // Allow cron calls through (they validate CRON_SECRET per route)
   if (req.nextUrl.pathname.startsWith("/api/cron")) {
     return NextResponse.next();
   }
 
-  // For API routes, no redirect needed
-  if (req.nextUrl.pathname.startsWith("/api")) {
+  // Allow auth callback and login without session
+  if (
+    req.nextUrl.pathname === "/login" ||
+    req.nextUrl.pathname.startsWith("/auth/callback")
+  ) {
     return NextResponse.next();
   }
 
-  // If no ADMIN_SECRET configured, allow all (dev mode)
-  if (!ADMIN_SECRET) return NextResponse.next();
+  // Allow signout API
+  if (req.nextUrl.pathname === "/api/auth/signout") {
+    return NextResponse.next();
+  }
 
-  // Check cookie
-  const token = req.cookies.get("admin_token")?.value;
-  if (token === ADMIN_SECRET) return NextResponse.next();
+  let response = NextResponse.next({
+    request: { headers: req.headers },
+  });
 
-  // Check Authorization header (for programmatic access)
-  const auth = req.headers.get("authorization");
-  if (auth === `Bearer ${ADMIN_SECRET}`) return NextResponse.next();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value);
+            response = NextResponse.next({
+              request: { headers: req.headers },
+            });
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
-  // Redirect to login
-  if (req.nextUrl.pathname !== "/login") {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // For API routes, return 401 if not authenticated
+  if (req.nextUrl.pathname.startsWith("/api")) {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return response;
+  }
+
+  // For UI routes, redirect to login if not authenticated
+  if (!user) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

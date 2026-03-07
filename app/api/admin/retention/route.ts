@@ -1,22 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { fetchMetrics } from "@/lib/retention/client";
 
-function isAuthorized(req: NextRequest): boolean {
-  const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
-  if (!ADMIN_SECRET) return true; // dev mode
-  const cookie = req.cookies.get("admin_token")?.value;
-  if (cookie === ADMIN_SECRET) return true;
-  const auth = req.headers.get("authorization");
-  if (auth === `Bearer ${ADMIN_SECRET}`) return true;
-  return false;
-}
-
-export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET() {
+  // Auth handled by middleware
   const supabase = createServerSupabaseClient();
   const metrics = await fetchMetrics();
 

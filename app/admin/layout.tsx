@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Users,
   Brain,
   Layers,
   Sliders,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   { href: "/admin/retention", label: "Retention", icon: Brain },
@@ -24,6 +27,29 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null
+  );
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser({
+          name: user.user_metadata?.full_name || user.email || "",
+          email: user.email || "",
+        });
+      }
+    });
+  }, []);
+
+  async function handleSignOut() {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/auth/signout";
+    document.body.appendChild(form);
+    form.submit();
+  }
 
   return (
     <div className="flex min-h-screen bg-black text-white">
@@ -56,16 +82,22 @@ export default function AdminLayout({
             );
           })}
         </nav>
-        <div className="p-4 border-t border-gray-800">
-          <Link href="/login">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-gray-700 text-gray-400 hover:text-yellow-400 hover:border-yellow-400"
-            >
-              Sign Out
-            </Button>
-          </Link>
+        <div className="p-4 border-t border-gray-800 space-y-3">
+          {user && (
+            <div className="text-xs">
+              <p className="text-white truncate">{user.name}</p>
+              <p className="text-gray-500 truncate">{user.email}</p>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSignOut}
+            className="w-full border-gray-700 text-gray-400 hover:text-yellow-400 hover:border-yellow-400"
+          >
+            <LogOut className="h-3 w-3 mr-1" />
+            Sign Out
+          </Button>
         </div>
       </aside>
 

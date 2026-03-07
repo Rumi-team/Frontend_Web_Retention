@@ -1,26 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase";
 import { classifyUser } from "@/lib/retention/segments";
 
-function isAuthorized(req: NextRequest): boolean {
-  const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
-  if (!ADMIN_SECRET) return true; // dev mode
-  const cookie = req.cookies.get("admin_token")?.value;
-  if (cookie === ADMIN_SECRET) return true;
-  const auth = req.headers.get("authorization");
-  if (auth === `Bearer ${ADMIN_SECRET}`) return true;
-  return false;
-}
-
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // Auth handled by middleware
+  const supabase = createServerSupabaseClient();
 
   const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
   const limit = 50;
