@@ -488,11 +488,10 @@ export default function LandingPage() {
             ].map(({ name, price, period, mau, features, highlight }, i) => (
               <Reveal key={i} delay={300 + i * 100}>
                 <div
-                  className={`rounded-2xl border p-6 md:p-8 transition-all duration-500 h-full flex flex-col ${
-                    highlight
+                  className={`rounded-2xl border p-6 md:p-8 transition-all duration-500 h-full flex flex-col ${highlight
                       ? "border-yellow-400/40 bg-yellow-400/[0.04] glow-yellow"
                       : "border-white/[0.06] bg-white/[0.02] hover:border-yellow-400/20"
-                  }`}
+                    }`}
                 >
                   {highlight && (
                     <span className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">
@@ -520,11 +519,10 @@ export default function LandingPage() {
                   </ul>
                   <Link
                     href="/login"
-                    className={`mt-6 w-full h-10 rounded-md text-sm font-semibold flex items-center justify-center transition-all duration-300 ${
-                      highlight
+                    className={`mt-6 w-full h-10 rounded-md text-sm font-semibold flex items-center justify-center transition-all duration-300 ${highlight
                         ? "bg-yellow-400 text-black hover:bg-yellow-300"
                         : "border border-white/[0.08] text-gray-300 hover:border-yellow-400/30 hover:text-white"
-                    }`}
+                      }`}
                   >
                     Get Started
                   </Link>
@@ -574,60 +572,6 @@ export default function LandingPage() {
               </div>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-      <div className="section-divider max-w-5xl mx-auto w-full" />
-
-      {/* ── Team ── */}
-      <section className="py-24 md:py-32 px-4 md:px-8">
-        <div className="max-w-5xl mx-auto">
-          <Reveal>
-            <p className="text-sm font-semibold tracking-widest uppercase text-yellow-400 mb-4 text-center">
-              Team
-            </p>
-          </Reveal>
-          <Reveal delay={100}>
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-              Built by{" "}
-              <span className="gradient-text">World-Class Experts</span>
-            </h2>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Ali Naeini, Ph.D.",
-                role: "CEO",
-                bio: "PhD in AI. Visiting researcher UC Berkeley. AI leader at Business Insider & Spotter (both $1B+ valuations). Shipped products to millions.",
-              },
-              {
-                name: "Saba Fazel",
-                role: "CPO",
-                bio: "Built participatory systems at the United Nations. Converts qualitative insight into product direction. Data Science, UCLA.",
-              },
-              {
-                name: "Parnian Fazel",
-                role: "CTO",
-                bio: "ML personalization systems, millions of daily predictions. Specializes in agentic AI architecture. MSc Machine Learning, Imperial College London.",
-              },
-            ].map(({ name, role, bio }, i) => (
-              <Reveal key={i} delay={200 + i * 100}>
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 hover:border-yellow-400/20 transition-all duration-500 h-full">
-                  <div className="w-14 h-14 rounded-full bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center mb-4">
-                    <span className="text-yellow-400 font-bold text-lg">
-                      {name[0]}
-                    </span>
-                  </div>
-                  <p className="text-yellow-400 font-semibold text-sm uppercase tracking-wider mb-1">
-                    {role}
-                  </p>
-                  <h3 className="text-xl font-bold text-white mb-3">{name}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{bio}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
         </div>
       </section>
 
