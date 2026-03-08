@@ -64,12 +64,12 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* ── Header ── */}
       <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-24 flex items-center justify-between">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/rumi_logo.png" alt="Rumi" className="h-8 w-auto" />
+          <img src="/rumi_logo.png" alt="Rumi" className="h-16 w-auto" />
           <Link
             href="/login"
-            className="bg-yellow-400 text-black px-6 h-10 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
+            className="bg-yellow-400 text-black px-12 h-20 rounded-md text-xl font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
           >
             Sign In
           </Link>
@@ -489,8 +489,8 @@ export default function LandingPage() {
               <Reveal key={i} delay={300 + i * 100}>
                 <div
                   className={`rounded-2xl border p-6 md:p-8 transition-all duration-500 h-full flex flex-col ${highlight
-                      ? "border-yellow-400/40 bg-yellow-400/[0.04] glow-yellow"
-                      : "border-white/[0.06] bg-white/[0.02] hover:border-yellow-400/20"
+                    ? "border-yellow-400/40 bg-yellow-400/[0.04] glow-yellow"
+                    : "border-white/[0.06] bg-white/[0.02] hover:border-yellow-400/20"
                     }`}
                 >
                   {highlight && (
@@ -520,8 +520,8 @@ export default function LandingPage() {
                   <Link
                     href="/login"
                     className={`mt-6 w-full h-10 rounded-md text-sm font-semibold flex items-center justify-center transition-all duration-300 ${highlight
-                        ? "bg-yellow-400 text-black hover:bg-yellow-300"
-                        : "border border-white/[0.08] text-gray-300 hover:border-yellow-400/30 hover:text-white"
+                      ? "bg-yellow-400 text-black hover:bg-yellow-300"
+                      : "border border-white/[0.08] text-gray-300 hover:border-yellow-400/30 hover:text-white"
                       }`}
                   >
                     Get Started
