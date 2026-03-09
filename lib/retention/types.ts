@@ -225,6 +225,30 @@ export interface ExperimentResult {
   guardrails: GuardrailMetric[];
 }
 
+// ── Coaching connection ──
+
+export interface CoachingSessionSummary {
+  strategy: string | null;
+  transformation_level: number | null;
+  duration_minutes: number | null;
+  date: string;
+}
+
+export interface CoachingProfileSummary {
+  full_name: string | null;
+  email: string | null;
+  is_paying: boolean;
+  plan_type: string | null;
+  joined: string;
+}
+
+export interface UserCoachingData {
+  profile: CoachingProfileSummary | null;
+  sessions: CoachingSessionSummary[];
+  total_sessions: number;
+  avg_transformation: number | null;
+}
+
 // ── Revenue ──
 
 export interface RevenueMetrics {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { fetchPosteriors } from "@/lib/retention/client";
 import { classifyUser } from "@/lib/retention/segments";
+import { fetchUserCoachingSessions, fetchUserProfile } from "@/lib/supabase/coaching-bridge";
 
 export async function GET(
   req: NextRequest,
@@ -43,6 +44,12 @@ export async function GET(
   const lastContact =
     decisions && decisions.length > 0 ? decisions[0].created_at : null;
 
+  // Coaching data from Rumi_App (cross-project)
+  const [coachingSessions, profile] = await Promise.all([
+    fetchUserCoachingSessions(userId),
+    fetchUserProfile(userId),
+  ]);
+
   return NextResponse.json({
     user_id: userId,
     segment,
@@ -51,5 +58,29 @@ export async function GET(
     posteriors: posteriorData?.posteriors || {},
     recent_decisions: decisions || [],
     recent_events: events || [],
+    coaching: {
+      profile: profile ? {
+        full_name: profile.full_name,
+        email: profile.email,
+        is_paying: profile.is_paying,
+        plan_type: profile.plan_type,
+        joined: profile.created_at,
+      } : null,
+      sessions: coachingSessions.map((s) => ({
+        strategy: s.strategy_name,
+        transformation_level: s.transformation_level,
+        duration_minutes: s.session_duration_minutes,
+        date: s.created_at,
+      })),
+      total_sessions: coachingSessions.length,
+      avg_transformation: coachingSessions.length > 0
+        ? Math.round(
+            coachingSessions
+              .filter((s) => s.transformation_level != null)
+              .reduce((sum, s) => sum + (s.transformation_level || 0), 0) /
+            Math.max(coachingSessions.filter((s) => s.transformation_level != null).length, 1) * 10
+          ) / 10
+        : null,
+    },
   });
 }

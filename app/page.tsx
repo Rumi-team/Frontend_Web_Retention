@@ -69,7 +69,7 @@ export default function LandingPage() {
           <img src="/rumi_logo.png" alt="Rumi" className="h-16 w-auto" />
           <Link
             href="/login"
-            className="bg-yellow-400 text-black px-12 h-20 rounded-md text-xl font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
+            className="bg-yellow-400 text-black px-6 h-10 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
           >
             Sign In
           </Link>

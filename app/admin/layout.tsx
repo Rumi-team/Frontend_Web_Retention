@@ -17,6 +17,7 @@ import {
   ClipboardList,
   FlaskConical,
   DollarSign,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/retention/experiments", label: "Experiments", icon: FlaskConical, group: "churn" },
   { href: "/admin/retention/revenue", label: "Revenue", icon: DollarSign, group: "churn" },
   // System
+  { href: "/admin/retention/coaching", label: "Coaching Link", icon: Link2, group: "system" },
   { href: "/admin/retention/config", label: "Policy Config", icon: Sliders, group: "system" },
 ];
 
@@ -132,6 +134,17 @@ export default function AdminLayout({
           })}
         </nav>
         <div className="p-4 border-t border-gray-800 space-y-3">
+          {process.env.NEXT_PUBLIC_COACHING_APP_URL && (
+            <a
+              href={`${process.env.NEXT_PUBLIC_COACHING_APP_URL}/admin`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-gray-400 hover:text-yellow-400 transition-colors"
+            >
+              <Link2 className="h-3 w-3" />
+              Coaching Admin
+            </a>
+          )}
           {user && (
             <div className="text-xs">
               <p className="text-white truncate">{user.name}</p>
