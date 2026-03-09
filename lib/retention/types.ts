@@ -1,3 +1,5 @@
+// ── Existing types (RL core) ──
+
 export interface PolicyConfig {
   version: string;
   config_json: {
@@ -83,4 +85,153 @@ export interface UserRetentionDetail {
     timestamp: string;
     properties: Record<string, unknown>;
   }>;
+}
+
+// ── APU (Active Paying Power Users) ──
+
+export interface APUSnapshot {
+  date: string;
+  apu_count: number;
+  total_paying: number;
+  apu_ratio: number;
+}
+
+export interface APUUser {
+  user_id: string;
+  email?: string;
+  name?: string;
+  sessions_this_week: number;
+  last_session: string;
+  plan_type?: string;
+}
+
+// ── Engagement ──
+
+export interface DAUMAURatio {
+  date: string;
+  dau: number;
+  mau: number;
+  ratio: number;
+}
+
+export interface SessionMetric {
+  date: string;
+  avg_duration_seconds: number;
+  total_sessions: number;
+  unique_users: number;
+}
+
+export interface StickinessPoint {
+  days_active: number;
+  user_count: number;
+}
+
+// ── Lifecycle (PostHog four-state Markov model) ──
+
+export type LifecycleStage = "new" | "returning" | "resurrecting" | "dormant";
+
+export interface LifecycleDay {
+  date: string;
+  new: number;
+  returning: number;
+  resurrecting: number;
+  dormant: number;
+}
+
+// ── Cohort retention (three PostHog modes) ──
+
+export type RetentionMode = "first_time" | "recurring" | "unbounded";
+
+export interface CohortRow {
+  cohort_label: string;
+  cohort_size: number;
+  retention_mode: RetentionMode;
+  periods: { period: number; retained: number; rate: number }[];
+}
+
+// ── Exit forms ──
+
+export interface ExitFormEntry {
+  id: number;
+  provider_user_id: string;
+  reason_category: string;
+  reason_detail: string;
+  feedback: string;
+  plan_at_exit: string;
+  submitted_at: string;
+}
+
+export interface ExitReasonSummary {
+  reason: string;
+  count: number;
+  percentage: number;
+}
+
+// ── Churn risk ──
+
+export interface ChurnRiskUser {
+  user_id: string;
+  score: number;
+  factors: Record<string, number>;
+  last_session: string | null;
+  computed_at: string;
+}
+
+// ── Correlation analysis (PostHog pattern → RL feature engineering) ──
+
+export interface CorrelationResult {
+  property_name: string;
+  property_value: string;
+  correlation_type: "success" | "failure";
+  odds_ratio: number;
+  significance: number;
+  sample_size: number;
+  rl_feature_candidate: boolean;
+}
+
+// ── Funnels ──
+
+export interface FunnelStep {
+  name: string;
+  event_type: string;
+  count: number;
+  conversion_rate: number;
+  drop_off: number;
+}
+
+export interface FunnelDefinition {
+  name: string;
+  steps: { label: string; event_type: string }[];
+}
+
+// ── Experiments (with PostHog guardrail pattern) ──
+
+export interface GuardrailMetric {
+  metric_name: string;
+  control_value: number;
+  treatment_value: number;
+  degraded: boolean;
+}
+
+export interface ExperimentResult {
+  flag_name: string;
+  control_count: number;
+  treatment_count: number;
+  control_retention_rate: number;
+  treatment_retention_rate: number;
+  lift: number;
+  confidence: number;
+  is_significant: boolean;
+  guardrails: GuardrailMetric[];
+}
+
+// ── Revenue ──
+
+export interface RevenueMetrics {
+  mrr: number;
+  mrr_trend: { date: string; mrr: number }[];
+  churn_rate: number;
+  ltv_estimate: number;
+  revenue_at_risk: number;
+  total_customers: number;
 }

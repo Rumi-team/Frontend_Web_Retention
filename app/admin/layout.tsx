@@ -5,21 +5,54 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   BarChart3,
-  Users,
   Brain,
   Layers,
   Sliders,
   LogOut,
+  Crown,
+  Activity,
+  RefreshCw,
+  Filter,
+  AlertTriangle,
+  ClipboardList,
+  FlaskConical,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const NAV_ITEMS = [
-  { href: "/admin/retention", label: "Retention", icon: Brain },
-  { href: "/admin/retention/users", label: "RL Users", icon: Layers },
-  { href: "/admin/retention/segments", label: "Segments", icon: BarChart3 },
-  { href: "/admin/retention/config", label: "Policy Config", icon: Sliders },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof Brain;
+  group: "core" | "analytics" | "churn" | "system";
+}
+
+const NAV_ITEMS: NavItem[] = [
+  // Core
+  { href: "/admin/retention", label: "Overview", icon: Brain, group: "core" },
+  { href: "/admin/retention/users", label: "RL Users", icon: Layers, group: "core" },
+  { href: "/admin/retention/segments", label: "Segments", icon: BarChart3, group: "core" },
+  // Analytics
+  { href: "/admin/retention/apu", label: "APU / VIP", icon: Crown, group: "analytics" },
+  { href: "/admin/retention/engagement", label: "Engagement", icon: Activity, group: "analytics" },
+  { href: "/admin/retention/lifecycle", label: "Lifecycle", icon: RefreshCw, group: "analytics" },
+  { href: "/admin/retention/funnels", label: "Funnels", icon: Filter, group: "analytics" },
+  // Churn
+  { href: "/admin/retention/churn", label: "Churn Risk", icon: AlertTriangle, group: "churn" },
+  { href: "/admin/retention/exit-forms", label: "Exit Forms", icon: ClipboardList, group: "churn" },
+  { href: "/admin/retention/experiments", label: "Experiments", icon: FlaskConical, group: "churn" },
+  { href: "/admin/retention/revenue", label: "Revenue", icon: DollarSign, group: "churn" },
+  // System
+  { href: "/admin/retention/config", label: "Policy Config", icon: Sliders, group: "system" },
 ];
+
+const GROUP_LABELS: Record<string, string> = {
+  core: "Core",
+  analytics: "Analytics",
+  churn: "Churn",
+  system: "System",
+};
 
 export default function AdminLayout({
   children,
@@ -51,6 +84,8 @@ export default function AdminLayout({
     form.submit();
   }
 
+  let lastGroup = "";
+
   return (
     <div className="flex min-h-screen bg-black text-white">
       {/* Sidebar */}
@@ -62,25 +97,37 @@ export default function AdminLayout({
             <span className="text-xs text-gray-500">Retention</span>
           </Link>
         </div>
-        <nav className="flex-1 py-4 space-y-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        <nav className="flex-1 py-2 overflow-y-auto">
+          {NAV_ITEMS.map(({ href, label, icon: Icon, group }) => {
+            const showGroupLabel = group !== lastGroup;
+            lastGroup = group;
+
             const isActive =
               href === "/admin/retention"
                 ? pathname === "/admin/retention"
                 : pathname.startsWith(href);
+
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-gray-800 text-yellow-400 border-r-2 border-yellow-400"
-                    : "text-gray-400 hover:text-white hover:bg-gray-900"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
+              <div key={href}>
+                {showGroupLabel && (
+                  <div className="px-4 pt-3 pb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-600 font-semibold">
+                      {GROUP_LABELS[group]}
+                    </span>
+                  </div>
+                )}
+                <Link
+                  href={href}
+                  className={`flex items-center gap-2 px-4 py-1.5 text-sm transition-colors ${
+                    isActive
+                      ? "bg-gray-800 text-yellow-400 border-r-2 border-yellow-400"
+                      : "text-gray-400 hover:text-white hover:bg-gray-900"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </Link>
+              </div>
             );
           })}
         </nav>

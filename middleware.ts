@@ -16,10 +16,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow signout and verify-code APIs without access check
+  // Allow signout, verify-code, and exit-form APIs without access check
   if (
     req.nextUrl.pathname === "/api/auth/signout" ||
     req.nextUrl.pathname === "/api/auth/verify-code" ||
+    req.nextUrl.pathname === "/api/exit-form" ||
     req.nextUrl.pathname === "/verify"
   ) {
     return NextResponse.next();
