@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Suspense } from "react";
 
 const ALLOWED_EMAILS = ["ali@rumi.team"];
 
@@ -13,7 +12,6 @@ function CallbackHandler() {
   const [status, setStatus] = useState("Completing sign in...");
 
   useEffect(() => {
-    const code = searchParams.get("code");
     const error = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
 
@@ -23,36 +21,38 @@ function CallbackHandler() {
       return;
     }
 
-    if (!code) {
-      router.replace("/login?error=auth_callback_failed");
-      return;
-    }
-
     const supabase = createSupabaseBrowserClient();
 
-    supabase.auth.exchangeCodeForSession(code).then(async ({ error: exchangeError }) => {
-      if (exchangeError) {
-        router.replace(`/login?error=${encodeURIComponent(exchangeError.message)}`);
-        return;
-      }
+    // With implicit flow, the session token arrives in the URL hash fragment.
+    // The Supabase client detects it automatically and fires SIGNED_IN.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          const email = session.user.email?.toLowerCase();
 
-      const { data: { user } } = await supabase.auth.getUser();
+          if (!email || !ALLOWED_EMAILS.includes(email)) {
+            setStatus("Access denied. Signing out...");
+            await supabase.auth.signOut();
+            router.replace(
+              `/login?error=${encodeURIComponent(
+                "Access restricted. Only authorized emails may sign in."
+              )}`
+            );
+            return;
+          }
 
-      if (!user?.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
-        setStatus("Access denied. Signing out...");
-        await supabase.auth.signOut();
-        router.replace(
-          `/login?error=${encodeURIComponent("Access restricted. Only authorized emails may sign in.")}`
-        );
-        return;
+          if (session.user.app_metadata?.access_verified) {
+            router.replace("/admin/retention");
+          } else {
+            router.replace("/verify");
+          }
+        }
       }
+    );
 
-      if (user.app_metadata?.access_verified) {
-        router.replace("/admin/retention");
-      } else {
-        router.replace("/verify");
-      }
-    });
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [router, searchParams]);
 
   return (
