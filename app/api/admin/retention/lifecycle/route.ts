@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = createRetentionDataClient();
 
   const range = req.nextUrl.searchParams.get("range") || "30";
   const daysBack = parseInt(range) || 30;

@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 
 /**
  * Default funnel: First Visit → Second Session → Weekly User → Repeat Weekly → APU
  */
 export async function GET() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = createRetentionDataClient();
 
   // Get all session_start events per user
   const { data: events } = await supabase
@@ -95,7 +92,7 @@ export async function GET() {
     .schema("retention")
     .from("flag_assignments")
     .select("provider_user_id,variant")
-    .eq("flag_name", "retention_bandit_v1");
+    .eq("flag_id", "retention_bandit_v1");
 
   let ab_comparison = null;
   if (flags && flags.length > 0) {

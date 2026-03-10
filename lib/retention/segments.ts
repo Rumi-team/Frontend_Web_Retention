@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -11,10 +11,7 @@ export interface SegmentResult {
 }
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  return createRetentionDataClient();
 }
 
 export async function computeSegments(): Promise<SegmentResult[]> {

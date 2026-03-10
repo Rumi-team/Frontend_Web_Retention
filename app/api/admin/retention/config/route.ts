@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createRetentionDataClient } from "@/lib/supabase";
 
 export async function GET() {
   // Auth handled by middleware
-  const supabase = createServerSupabaseClient();
+  const supabase = createRetentionDataClient();
 
   const { data: configs } = await supabase
     .schema("retention")
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createRetentionDataClient();
 
   // Deactivate current active config
   await supabase

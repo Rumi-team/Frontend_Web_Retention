@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createRetentionDataClient } from "@/lib/supabase";
 import { fetchPosteriors } from "@/lib/retention/client";
 import { classifyUser } from "@/lib/retention/segments";
 import { fetchUserCoachingSessions, fetchUserProfile } from "@/lib/supabase/coaching-bridge";
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   const { id: userId } = await params;
   // Auth handled by middleware
-  const supabase = createServerSupabaseClient();
+  const supabase = createRetentionDataClient();
 
   // Posteriors from retention API
   const posteriorData = await fetchPosteriors(userId);

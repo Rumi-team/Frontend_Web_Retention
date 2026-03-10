@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createRetentionDataClient } from "@/lib/supabase";
 import { classifyUser } from "@/lib/retention/segments";
 
 export async function GET(req: NextRequest) {
   // Auth handled by middleware
-  const supabase = createServerSupabaseClient();
+  const supabase = createRetentionDataClient();
 
   const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
   const limit = 50;

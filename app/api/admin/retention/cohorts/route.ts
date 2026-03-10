@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 import { computeRetentionMatrix } from "@/lib/retention/analytics";
 import type { RetentionMode } from "@/lib/retention/types";
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = createRetentionDataClient();
 
   const unit = (req.nextUrl.searchParams.get("unit") || "week") as "week" | "month";
   const mode = (req.nextUrl.searchParams.get("mode") || "first_time") as RetentionMode;

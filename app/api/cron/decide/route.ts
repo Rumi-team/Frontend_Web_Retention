@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 import { requestDecision } from "@/lib/retention/client";
 
 const MAX_USERS_PER_RUN = 50;
@@ -10,10 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createRetentionDataClient();
 
   // Get active users (session in last 30 days), most at-risk first
   const thirtyDaysAgo = new Date(

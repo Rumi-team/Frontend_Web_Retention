@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createRetentionDataClient } from "@/lib/supabase";
 import {
   fetchCoachingSessions,
   fetchProfiles,
@@ -19,7 +19,7 @@ export async function GET() {
     });
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createRetentionDataClient();
 
   // 1. Fetch coaching sessions from Rumi_App
   const sessions = await fetchCoachingSessions(1000);

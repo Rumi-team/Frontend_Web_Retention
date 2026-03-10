@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createRetentionDataClient } from "@/lib/supabase";
 import { zTestTwoProportions } from "@/lib/retention/analytics";
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = createRetentionDataClient();
 
   // Get all flag assignments
   const { data: flags } = await supabase
     .schema("retention")
     .from("flag_assignments")
-    .select("provider_user_id,flag_name,variant,assigned_at");
+    .select("provider_user_id,flag_id,variant,assigned_at");
 
   if (!flags?.length) {
     return NextResponse.json({ experiments: [], retention_curves: [] });
@@ -21,9 +18,9 @@ export async function GET() {
   // Group by flag
   const flagGroups: Record<string, { control: string[]; treatment: string[] }> = {};
   for (const f of flags) {
-    if (!flagGroups[f.flag_name]) flagGroups[f.flag_name] = { control: [], treatment: [] };
-    if (f.variant === "control") flagGroups[f.flag_name].control.push(f.provider_user_id);
-    else flagGroups[f.flag_name].treatment.push(f.provider_user_id);
+    if (!flagGroups[f.flag_id]) flagGroups[f.flag_id] = { control: [], treatment: [] };
+    if (f.variant === "control") flagGroups[f.flag_id].control.push(f.provider_user_id);
+    else flagGroups[f.flag_id].treatment.push(f.provider_user_id);
   }
 
   // Get session events for retention calculation
@@ -117,7 +114,7 @@ export async function GET() {
     const treatmentReward = avgReward(treatmentIds);
 
     experiments.push({
-      flag_name: flagName,
+      flag_id: flagName,
       control_count: controlIds.length,
       treatment_count: treatmentIds.length,
       control_retention_rate: Math.round(controlRate * 1000) / 1000,
