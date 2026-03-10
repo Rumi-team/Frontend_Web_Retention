@@ -10,6 +10,7 @@ function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Completing sign in...");
+  const [deniedEmail, setDeniedEmail] = useState("");
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -28,16 +29,15 @@ function CallbackHandler() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          const email = session.user.email?.toLowerCase();
+          const email = session.user.email?.toLowerCase() ?? "";
 
           if (!email || !ALLOWED_EMAILS.includes(email)) {
-            setStatus("Access denied. Signing out...");
+            setDeniedEmail(session.user.email ?? email);
+            setStatus("is not authorized to access this dashboard.");
             await supabase.auth.signOut();
-            router.replace(
-              `/login?error=${encodeURIComponent(
-                "Access restricted. Only authorized emails may sign in."
-              )}`
-            );
+            setTimeout(() => {
+              router.replace("/login");
+            }, 3000);
             return;
           }
 
@@ -54,6 +54,23 @@ function CallbackHandler() {
       subscription.unsubscribe();
     };
   }, [router, searchParams]);
+
+  if (deniedEmail) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-sm text-center space-y-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/rumi_logo.png" alt="Rumi" className="h-10 w-auto mx-auto" />
+          <p className="text-red-400 text-sm font-medium">Access Denied</p>
+          <p className="text-gray-400 text-sm">
+            <span className="text-white font-mono">{deniedEmail}</span>{" "}
+            is not authorized to access this dashboard.
+          </p>
+          <p className="text-gray-600 text-xs">Redirecting to sign in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
