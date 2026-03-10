@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+const ALLOWED_EMAILS = ["ali@rumi.team"];
+
 export async function middleware(req: NextRequest) {
   // Allow cron calls through (they validate CRON_SECRET per route)
   if (req.nextUrl.pathname.startsWith("/api/cron")) {
@@ -60,12 +62,23 @@ export async function middleware(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    // Check email allowlist
+    if (!user.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     return response;
   }
 
   // For UI routes, redirect to login if not authenticated
   if (!user) {
     return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  // Check email allowlist
+  if (!user.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+    return NextResponse.redirect(
+      new URL("/login?error=Access+restricted.+Only+authorized+emails+may+sign+in.", req.url)
+    );
   }
 
   // Redirect to /verify if user hasn't entered their access code yet
