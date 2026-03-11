@@ -48,6 +48,7 @@ export async function GET() {
     decisions_data_length: decisionsRes.data?.length ?? null,
     events_count: eventsRes.count,
   };
+  console.log("[retention-debug]", JSON.stringify(_debug));
 
   const decisions = decisionsRes.data || [];
   const totalDecisions = decisionsRes.count || 0;
