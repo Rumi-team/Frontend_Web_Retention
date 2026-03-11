@@ -23,36 +23,62 @@ function CallbackHandler() {
     }
 
     const supabase = createSupabaseBrowserClient();
+    const code = searchParams.get("code");
 
-    // With implicit flow, the session token arrives in the URL hash fragment.
-    // The Supabase client detects it automatically and fires SIGNED_IN.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          const email = session.user.email?.toLowerCase() ?? "";
-
-          if (!email || !ALLOWED_EMAILS.includes(email)) {
-            setDeniedEmail(session.user.email ?? email);
-            setStatus("is not authorized to access this dashboard.");
-            await supabase.auth.signOut();
-            setTimeout(() => {
-              router.replace("/login");
-            }, 3000);
-            return;
-          }
-
-          if (session.user.app_metadata?.access_verified) {
-            router.replace("/admin/retention");
-          } else {
-            router.replace("/verify");
-          }
+    async function handleAuth() {
+      // If we have a PKCE code, exchange it first
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          router.replace(`/login?error=${encodeURIComponent(exchangeError.message)}`);
+          return;
         }
       }
-    );
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      // Check current session (works for both PKCE exchange and implicit flow)
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        // For implicit flow, listen for the hash fragment
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (event === "SIGNED_IN" && session?.user) {
+              await redirectUser(supabase, session.user);
+            }
+          }
+        );
+        // Clean up after 10s timeout
+        setTimeout(() => {
+          subscription.unsubscribe();
+          router.replace("/login?error=Sign+in+timed+out");
+        }, 10000);
+        return;
+      }
+
+      await redirectUser(supabase, user);
+    }
+
+    async function redirectUser(supabase: ReturnType<typeof createSupabaseBrowserClient>, user: { email?: string | null; app_metadata?: Record<string, unknown> }) {
+      const email = user.email?.toLowerCase() ?? "";
+
+      if (!email || !ALLOWED_EMAILS.includes(email)) {
+        setDeniedEmail(user.email ?? email);
+        setStatus("is not authorized to access this dashboard.");
+        await supabase.auth.signOut();
+        setTimeout(() => {
+          router.replace("/login");
+        }, 3000);
+        return;
+      }
+
+      if (user.app_metadata?.access_verified) {
+        router.replace("/admin/retention");
+      } else {
+        router.replace("/verify");
+      }
+    }
+
+    handleAuth();
   }, [router, searchParams]);
 
   if (deniedEmail) {
