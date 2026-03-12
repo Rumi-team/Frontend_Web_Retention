@@ -5,9 +5,6 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   // Auth handled by middleware
-  const url = process.env.RUMI_APP_SUPABASE_URL || "(missing)";
-  const key = process.env.RUMI_APP_SUPABASE_SERVICE_KEY || "(missing)";
-
   const supabase = createRetentionDataClient();
 
   // Query retention data directly from Supabase (Rumi_App)
@@ -34,21 +31,6 @@ export async function GET() {
       .from("flag_assignments")
       .select("variant"),
   ]);
-
-  // DEBUG: surface errors and env info (remove after fixing)
-  const _debug = {
-    env_url: url,
-    env_key_prefix: key.substring(0, 15),
-    env_key_length: key.length,
-    decisions_error: decisionsRes.error,
-    events_error: eventsRes.error,
-    rewards_error: rewardsRes.error,
-    flags_error: flagsRes.error,
-    decisions_count: decisionsRes.count,
-    decisions_data_length: decisionsRes.data?.length ?? null,
-    events_count: eventsRes.count,
-  };
-  console.log("[retention-debug]", JSON.stringify(_debug));
 
   const decisions = decisionsRes.data || [];
   const totalDecisions = decisionsRes.count || 0;
@@ -112,7 +94,6 @@ export async function GET() {
     .limit(50);
 
   return NextResponse.json({
-    _debug,
     metrics: metrics || {},
     recent_decisions: recentDecisions || [],
   });
