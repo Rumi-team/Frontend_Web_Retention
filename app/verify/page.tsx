@@ -10,9 +10,8 @@ function VerifyForm() {
   const [email, setEmail] = useState("");
   const router = useRouter();
 
-  const supabase = createSupabaseBrowserClient();
-
   useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) router.push("/login");
       else setEmail(user.email || "");
@@ -21,6 +20,7 @@ function VerifyForm() {
   }, [router]);
 
   async function handleSignOut() {
+    const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
