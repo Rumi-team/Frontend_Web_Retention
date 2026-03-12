@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRetentionDataClient } from "@/lib/supabase";
+import { isRealUser } from "@/lib/retention/segments";
 
 export async function GET() {
   const supabase = createRetentionDataClient();
@@ -15,28 +16,40 @@ export async function GET() {
     .gte("timestamp", thirtyDaysAgo)
     .order("timestamp", { ascending: true });
 
-  // Build daily unique user counts
+  // Build daily unique user counts (exclude simulation IDs)
   const dailyUsers: Record<string, Set<string>> = {};
   for (const e of dauEvents || []) {
+    if (!isRealUser(e.provider_user_id)) continue;
     const day = e.timestamp.slice(0, 10);
     if (!dailyUsers[day]) dailyUsers[day] = new Set();
     dailyUsers[day].add(e.provider_user_id);
   }
 
-  // MAU = all unique users across the 30-day window
-  const allUsersInWindow = new Set((dauEvents || []).map((e) => e.provider_user_id));
-  const mau = allUsersInWindow.size;
-
-  const dau_mau = Object.entries(dailyUsers)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, users]) => ({
+  // Rolling 30-day MAU: for each day, count unique users in [day-29, day]
+  const sortedDays = Object.keys(dailyUsers).sort();
+  const dau_mau = sortedDays.map((date) => {
+    const dayMs = new Date(date).getTime();
+    const windowStart = dayMs - 29 * 86400000;
+    const mauUsers = new Set<string>();
+    for (const [d, users] of Object.entries(dailyUsers)) {
+      const dMs = new Date(d).getTime();
+      if (dMs >= windowStart && dMs <= dayMs) {
+        for (const u of users) mauUsers.add(u);
+      }
+    }
+    const dau = dailyUsers[date].size;
+    const mau = mauUsers.size;
+    return {
       date,
-      dau: users.size,
+      dau,
       mau,
-      ratio: mau > 0 ? Math.round((users.size / mau) * 1000) / 1000 : 0,
-    }));
+      ratio: mau > 0 ? Math.round((dau / mau) * 1000) / 1000 : 0,
+    };
+  });
 
   // ── Session Duration ──
+  // Use session_metrics for historical data, but supplement with live event
+  // data for today so "Sessions Today" / "Unique Users Today" aren't stale.
   const thirtyDaysAgoDate = thirtyDaysAgo.slice(0, 10);
   const { data: sessionMetrics } = await supabase
     .schema("retention")
@@ -45,13 +58,25 @@ export async function GET() {
     .gte("date", thirtyDaysAgoDate)
     .order("date", { ascending: true });
 
-  // Aggregate by day
+  // Aggregate by day (exclude simulation IDs)
   const dayMetrics: Record<string, { totalSessions: number; totalDuration: number; users: Set<string> }> = {};
   for (const m of sessionMetrics || []) {
+    if (!isRealUser(m.provider_user_id)) continue;
     if (!dayMetrics[m.date]) dayMetrics[m.date] = { totalSessions: 0, totalDuration: 0, users: new Set() };
     dayMetrics[m.date].totalSessions += m.session_count;
     dayMetrics[m.date].totalDuration += m.avg_duration_seconds * m.session_count;
     dayMetrics[m.date].users.add(m.provider_user_id);
+  }
+
+  // Supplement today's metrics from live events so we don't wait for the cron
+  const today = new Date().toISOString().slice(0, 10);
+  const todayEvents = dailyUsers[today];
+  if (todayEvents && todayEvents.size > 0 && !dayMetrics[today]) {
+    dayMetrics[today] = {
+      totalSessions: todayEvents.size, // approximate: 1 session per user
+      totalDuration: 0,
+      users: todayEvents,
+    };
   }
 
   const session_metrics = Object.entries(dayMetrics)
@@ -81,6 +106,7 @@ export async function GET() {
   // How many unique days each user was active in the last 30 days
   const userActiveDays: Record<string, Set<string>> = {};
   for (const e of dauEvents || []) {
+    if (!isRealUser(e.provider_user_id)) continue;
     const day = e.timestamp.slice(0, 10);
     if (!userActiveDays[e.provider_user_id]) userActiveDays[e.provider_user_id] = new Set();
     userActiveDays[e.provider_user_id].add(day);

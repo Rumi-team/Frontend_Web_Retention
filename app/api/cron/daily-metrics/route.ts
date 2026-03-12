@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createRetentionDataClient } from "@/lib/supabase";
 import { classifyLifecycleState, computeChurnScore, computeRetentionMatrix } from "@/lib/retention/analytics";
+import { isRealUser } from "@/lib/retention/segments";
 
 export const maxDuration = 60;
 
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
     const userDateSessions: Record<string, Record<string, { starts: string[]; ends: string[] }>> = {};
     for (const e of recentEvents) {
       const uid = e.provider_user_id;
+      if (!isRealUser(uid)) continue;
       const date = e.timestamp.slice(0, 10);
       if (!userDateSessions[uid]) userDateSessions[uid] = {};
       if (!userDateSessions[uid][date]) userDateSessions[uid][date] = { starts: [], ends: [] };
@@ -166,6 +168,7 @@ export async function GET(req: NextRequest) {
   if (allEvents?.length) {
     const userTimestamps: Record<string, string[]> = {};
     for (const e of allEvents) {
+      if (!isRealUser(e.provider_user_id)) continue;
       if (!userTimestamps[e.provider_user_id]) userTimestamps[e.provider_user_id] = [];
       userTimestamps[e.provider_user_id].push(e.timestamp);
     }
@@ -285,8 +288,9 @@ export async function GET(req: NextRequest) {
   // ── 5. Cohort Cache ──
   // Compute weekly first_time retention matrix from session_start events
   if (allEvents?.length) {
+    const realEvents = allEvents.filter((e) => isRealUser(e.provider_user_id));
     const cohortRows = computeRetentionMatrix(
-      allEvents.map((e) => ({ provider_user_id: e.provider_user_id, timestamp: e.timestamp })),
+      realEvents.map((e) => ({ provider_user_id: e.provider_user_id, timestamp: e.timestamp })),
       "first_time",
       "week",
       12,

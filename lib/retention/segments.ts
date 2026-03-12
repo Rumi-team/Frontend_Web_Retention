@@ -3,6 +3,11 @@ import { createRetentionDataClient } from "@/lib/supabase";
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Filter out simulation/test user IDs (e.g. user_ab2_xxx). */
+export function isRealUser(uid: string): boolean {
+  return !uid.startsWith("user_ab");
+}
+
 export interface SegmentResult {
   name: string;
   count: number;
@@ -36,10 +41,11 @@ export async function computeSegments(): Promise<SegmentResult[]> {
     ];
   }
 
-  // Group by user
+  // Group by user (exclude simulation IDs)
   const userSessions: Record<string, string[]> = {};
   for (const e of events) {
     const uid = e.provider_user_id;
+    if (!isRealUser(uid)) continue;
     if (!userSessions[uid]) userSessions[uid] = [];
     userSessions[uid].push(e.timestamp);
   }

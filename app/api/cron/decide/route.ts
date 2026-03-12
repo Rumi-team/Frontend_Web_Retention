@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     .schema("retention")
     .from("flag_assignments")
     .select("provider_user_id, variant")
-    .eq("flag_id", "retention_bandit_v1")
+    .eq("flag_name", "retention_bandit_v1")
     .in("provider_user_id", uniqueUsers);
 
   const treatmentSet = new Set(

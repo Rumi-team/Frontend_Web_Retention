@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRetentionDataClient } from "@/lib/supabase";
-import { classifyUser } from "@/lib/retention/segments";
+import { classifyUser, isRealUser } from "@/lib/retention/segments";
 
 export async function GET(req: NextRequest) {
   // Auth handled by middleware
@@ -21,13 +21,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ users: [], total: 0, page });
   }
 
-  // Group by user
+  // Group by user (exclude simulation IDs)
   const userMap: Record<
     string,
     { decision_count: number; last_contact: string }
   > = {};
   for (const d of decisionData) {
     const uid = d.provider_user_id;
+    if (!isRealUser(uid)) continue;
     if (!userMap[uid]) {
       userMap[uid] = { decision_count: 0, last_contact: d.created_at };
     }

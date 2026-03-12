@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRetentionDataClient } from "@/lib/supabase";
+import { isRealUser } from "@/lib/retention/segments";
 
 /**
  * Default funnel: First Visit → Second Session → Weekly User → Repeat Weekly → APU
@@ -19,9 +20,10 @@ export async function GET() {
     return NextResponse.json({ funnel_name: "Default Funnel", steps: [], total_users: 0 });
   }
 
-  // Group by user
+  // Group by user (exclude simulation IDs)
   const userSessions: Record<string, Date[]> = {};
   for (const e of events) {
+    if (!isRealUser(e.provider_user_id)) continue;
     if (!userSessions[e.provider_user_id]) userSessions[e.provider_user_id] = [];
     userSessions[e.provider_user_id].push(new Date(e.timestamp));
   }
@@ -51,10 +53,10 @@ export async function GET() {
     }
   }
 
-  // Step 4: Repeat Weekly (active in 2+ consecutive weeks)
+  // Step 4: Repeat Weekly (must be a Weekly User AND active in 2+ consecutive weeks)
   const step4Users = new Set<string>();
-  for (const [uid, dates] of Object.entries(userSessions)) {
-    // Get unique weeks
+  for (const uid of step3Users) {
+    const dates = userSessions[uid];
     const weeks = new Set(dates.map((d) => {
       const start = new Date(d);
       start.setDate(start.getDate() - start.getDay());
@@ -92,7 +94,7 @@ export async function GET() {
     .schema("retention")
     .from("flag_assignments")
     .select("provider_user_id,variant")
-    .eq("flag_id", "retention_bandit_v1");
+    .eq("flag_name", "retention_bandit_v1");
 
   let ab_comparison = null;
   if (flags && flags.length > 0) {

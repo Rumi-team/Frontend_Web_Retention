@@ -50,8 +50,7 @@ export async function GET(req: NextRequest) {
   const { data: oldDecisions } = await supabase
     .schema("retention")
     .from("decisions")
-    .select("id,provider_user_id,created_at")
-    .neq("action_chosen", "no_action")
+    .select("id,provider_user_id,action_chosen,created_at")
     .lt("created_at", cutoff)
     .order("created_at", { ascending: true })
     .limit(500);

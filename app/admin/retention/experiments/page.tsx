@@ -58,9 +58,9 @@ export default function ExperimentsDashboard() {
 
       {/* Per-Experiment Cards */}
       {data.experiments.map((exp) => (
-        <div key={exp.flag_id} className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4">
+        <div key={exp.flag_name} className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-200 font-mono">{exp.flag_id}</h2>
+            <h2 className="text-sm font-semibold text-gray-200 font-mono">{exp.flag_name}</h2>
             {exp.is_significant ? (
               <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-green-900 text-green-300">
                 <CheckCircle className="h-3 w-3" /> Significant

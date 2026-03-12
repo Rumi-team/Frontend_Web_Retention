@@ -64,6 +64,42 @@ export async function GET() {
     else if (f.variant === "treatment") abSplit.treatment++;
   }
 
+  // Cold start count: users with fewer than 5 decisions
+  const { data: coldStartData } = await supabase
+    .schema("retention")
+    .from("decisions")
+    .select("provider_user_id")
+    .gte("created_at", thirtyDaysAgo);
+
+  const userDCounts: Record<string, number> = {};
+  for (const d of coldStartData || []) {
+    userDCounts[d.provider_user_id] = (userDCounts[d.provider_user_id] || 0) + 1;
+  }
+  const coldStartCount = Object.values(userDCounts).filter((c) => c < 5).length;
+
+  // Compute incremental lift from control_matches
+  const { data: liftData } = await supabase
+    .schema("retention")
+    .from("control_matches")
+    .select("incremental_lift")
+    .not("incremental_lift", "is", null);
+
+  const avgLift = liftData && liftData.length > 0
+    ? liftData.reduce((s, r) => s + (r.incremental_lift || 0), 0) / liftData.length
+    : 0;
+
+  // Compute rewards_by_day
+  const { data: rewardRows } = await supabase
+    .schema("retention")
+    .from("rewards")
+    .select("reward_value,timestamp")
+    .gte("timestamp", thirtyDaysAgo);
+
+  for (const r of rewardRows || []) {
+    const day = r.timestamp?.slice(0, 10);
+    if (day) rewardsByDay[day] = (rewardsByDay[day] || 0) + (r.reward_value || 0);
+  }
+
   const metrics = {
     total_decisions: totalDecisions,
     total_events: totalEvents,
@@ -78,8 +114,8 @@ export async function GET() {
     },
     dimension_distributions: {},
     rl_health: {
-      cold_start_count: 0,
-      avg_incremental_lift: 0,
+      cold_start_count: coldStartCount,
+      avg_incremental_lift: Math.round(avgLift * 1000) / 1000,
     },
   };
 

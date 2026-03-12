@@ -214,7 +214,7 @@ export interface GuardrailMetric {
 }
 
 export interface ExperimentResult {
-  flag_id: string;
+  flag_name: string;
   control_count: number;
   treatment_count: number;
   control_retention_rate: number;
