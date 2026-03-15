@@ -102,24 +102,18 @@ export default function CrmPage() {
     }
   };
 
-  const handleSendInvite = async (
-    contactId: string,
-    channel: "email" | "sms",
-    type = "invite"
-  ) => {
+  const handleSendEmail = async (contactId: string, type = "invite") => {
     setSending(contactId);
     const res = await fetch("/api/admin/retention/crm/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contact_id: contactId, channel, type }),
+      body: JSON.stringify({ contact_id: contactId, channel: "email", type }),
     });
     const data = await res.json();
     setSending(null);
 
     if (data.success) {
-      showToast(
-        type === "nudge" ? "Nudge sent!" : `${channel === "email" ? "Email" : "SMS"} sent!`
-      );
+      showToast(type === "nudge" ? "Nudge sent!" : "Email sent!");
       fetchContacts();
     } else {
       showToast(data.error || "Send failed");
@@ -210,8 +204,9 @@ export default function CrmPage() {
       ) : (
         <ContactTable
           contacts={contacts}
-          onSendInvite={handleSendInvite}
+          onSendEmail={handleSendEmail}
           sending={sending}
+          onCopyMessage={() => showToast("Invite message copied!")}
         />
       )}
 

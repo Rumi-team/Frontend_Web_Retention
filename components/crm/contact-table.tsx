@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, MessageSquare, Link2, Zap } from "lucide-react";
+import { Mail, Copy, Link2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Contact {
@@ -79,17 +79,25 @@ function needsNudge(c: Contact): boolean {
 interface Props {
   contacts: Contact[];
   transformationScores?: Record<string, number[]>;
-  onSendInvite: (contactId: string, channel: "email" | "sms", type?: string) => void;
+  onSendEmail: (contactId: string, type?: string) => void;
   sending?: string | null;
+  onCopyMessage?: (contact: Contact) => void;
+}
+
+function generateInviteMessage(c: Contact): string {
+  const url = `https://rumi.team/login?ref=${encodeURIComponent(c.access_code || "")}`;
+  return `Hey ${c.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow. Your access code: ${c.access_code}\n\nStart here: ${url}`;
 }
 
 export default function ContactTable({
   contacts,
   transformationScores = {},
-  onSendInvite,
+  onSendEmail,
   sending,
+  onCopyMessage,
 }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
   const copyLink = (contact: Contact) => {
     if (!contact.access_code) return;
@@ -97,6 +105,14 @@ export default function ContactTable({
     navigator.clipboard.writeText(url);
     setCopiedId(contact.id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const copyMessage = (contact: Contact) => {
+    const msg = generateInviteMessage(contact);
+    navigator.clipboard.writeText(msg);
+    setCopiedMsgId(contact.id);
+    setTimeout(() => setCopiedMsgId(null), 2000);
+    onCopyMessage?.(contact);
   };
 
   return (
@@ -155,21 +171,25 @@ export default function ContactTable({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-gray-400 hover:text-yellow-400"
-                        onClick={() => onSendInvite(c.id, "email")}
+                        onClick={() => onSendEmail(c.id)}
                         disabled={sending === c.id}
+                        title="Send email invite"
                       >
                         <Mail className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {c.phone && (
+                    {c.access_code && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-gray-400 hover:text-yellow-400"
-                        onClick={() => onSendInvite(c.id, "sms")}
-                        disabled={sending === c.id}
+                        onClick={() => copyMessage(c)}
+                        title="Copy invite message"
                       >
-                        <MessageSquare className="h-3.5 w-3.5" />
+                        <Copy className="h-3.5 w-3.5" />
+                        {copiedMsgId === c.id && (
+                          <span className="ml-1 text-xs text-green-400">Copied!</span>
+                        )}
                       </Button>
                     )}
                     {c.access_code && (
@@ -178,6 +198,7 @@ export default function ContactTable({
                         size="sm"
                         className="h-7 px-2 text-gray-400 hover:text-yellow-400"
                         onClick={() => copyLink(c)}
+                        title="Copy link only"
                       >
                         <Link2 className="h-3.5 w-3.5" />
                         {copiedId === c.id && (
@@ -190,8 +211,9 @@ export default function ContactTable({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-yellow-500 hover:text-yellow-300"
-                        onClick={() => onSendInvite(c.id, "email", "nudge")}
+                        onClick={() => onSendEmail(c.id, "nudge")}
                         disabled={sending === c.id}
+                        title="Send nudge email"
                       >
                         <Zap className="h-3.5 w-3.5" />
                       </Button>

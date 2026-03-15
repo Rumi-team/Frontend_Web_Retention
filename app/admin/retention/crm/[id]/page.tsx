@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Mail,
-  MessageSquare,
+  Copy,
   Link2,
   Zap,
 } from "lucide-react";
@@ -63,17 +63,16 @@ export default function ContactDetailPage({
       });
   }, [id]);
 
-  const sendInvite = async (channel: "email" | "sms", type = "invite") => {
+  const sendEmail = async (type = "invite") => {
     setSending(true);
     const res = await fetch("/api/admin/retention/crm/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contact_id: id, channel, type }),
+      body: JSON.stringify({ contact_id: id, channel: "email", type }),
     });
     const data = await res.json();
     setSending(false);
-    showToast(data.success ? "Sent!" : data.error || "Failed");
-    // Refresh
+    showToast(data.success ? "Email sent!" : data.error || "Failed");
     const r = await fetch(`/api/admin/retention/crm/${id}`);
     const refreshed = await r.json();
     setContact(refreshed.contact);
@@ -87,6 +86,14 @@ export default function ContactDetailPage({
     );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyMessage = () => {
+    if (!contact) return;
+    const url = `https://rumi.team/login?ref=${encodeURIComponent(contact.access_code || "")}`;
+    const msg = `Hey ${contact.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow. Your access code: ${contact.access_code}\n\nStart here: ${url}`;
+    navigator.clipboard.writeText(msg);
+    showToast("Invite message copied to clipboard!");
   };
 
   if (loading) {
@@ -186,21 +193,20 @@ export default function ContactDetailPage({
       <div className="flex gap-2 mb-6 flex-wrap">
         {contact.email && (
           <Button
-            onClick={() => sendInvite("email")}
+            onClick={() => sendEmail()}
             disabled={sending}
             className="bg-yellow-500 text-black hover:bg-yellow-400"
           >
             <Mail className="h-4 w-4 mr-1" /> Send Email
           </Button>
         )}
-        {contact.phone && (
+        {contact.access_code && (
           <Button
-            onClick={() => sendInvite("sms")}
-            disabled={sending}
+            onClick={copyMessage}
             variant="outline"
             className="border-gray-700 text-gray-300"
           >
-            <MessageSquare className="h-4 w-4 mr-1" /> Send SMS
+            <Copy className="h-4 w-4 mr-1" /> Copy Message
           </Button>
         )}
         {contact.access_code && (
@@ -210,12 +216,12 @@ export default function ContactDetailPage({
             className="border-gray-700 text-gray-300"
           >
             <Link2 className="h-4 w-4 mr-1" />
-            {copied ? "Copied!" : "Copy Invite Link"}
+            {copied ? "Copied!" : "Copy Link"}
           </Button>
         )}
         {needsNudge && contact.email && (
           <Button
-            onClick={() => sendInvite("email", "nudge")}
+            onClick={() => sendEmail("nudge")}
             disabled={sending}
             variant="outline"
             className="border-yellow-600 text-yellow-500 hover:text-yellow-400"
