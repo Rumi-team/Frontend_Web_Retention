@@ -14,6 +14,13 @@ export const createServerSupabaseClient = () => {
 };
 
 /**
+ * Alias for createServerSupabaseClient — explicit name for CRM code.
+ * Connects to Retention_Layer Supabase (bsdltifbtadowlexhqry).
+ * Use for: crm_contacts, crm_invites, access_codes, access_code_redemptions.
+ */
+export const createRetentionLayerClient = () => createServerSupabaseClient();
+
+/**
  * Service-role client for the Rumi_App Supabase project (xdaxseboeioleiguqfkg).
  * ALL retention data (events, decisions, rewards, flags, etc.) lives here.
  * Use this for any .schema("retention") queries.

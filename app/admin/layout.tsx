@@ -18,6 +18,7 @@ import {
   FlaskConical,
   DollarSign,
   Link2,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -26,7 +27,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: typeof Brain;
-  group: "core" | "analytics" | "churn" | "system";
+  group: "core" | "analytics" | "churn" | "system" | "gtm";
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -44,6 +45,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/retention/exit-forms", label: "Exit Forms", icon: ClipboardList, group: "churn" },
   { href: "/admin/retention/experiments", label: "Experiments", icon: FlaskConical, group: "churn" },
   { href: "/admin/retention/revenue", label: "Revenue", icon: DollarSign, group: "churn" },
+  // GTM
+  { href: "/admin/retention/crm", label: "CRM", icon: Users, group: "gtm" },
   // System
   { href: "/admin/retention/coaching", label: "Coaching Link", icon: Link2, group: "system" },
   { href: "/admin/retention/config", label: "Policy Config", icon: Sliders, group: "system" },
@@ -53,6 +56,7 @@ const GROUP_LABELS: Record<string, string> = {
   core: "Core",
   analytics: "Analytics",
   churn: "Churn",
+  gtm: "GTM",
   system: "System",
 };
 
