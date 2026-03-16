@@ -91,7 +91,7 @@ export default function ContactDetailPage({
   const copyMessage = () => {
     if (!contact) return;
     const url = `https://rumi.team/login?ref=${encodeURIComponent(contact.access_code || "")}`;
-    const msg = `Hey ${contact.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow. Your access code: ${contact.access_code}\n\nStart here: ${url}`;
+    const msg = `Hey ${contact.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow.\n\nStart here: ${url}`;
     navigator.clipboard.writeText(msg);
     showToast("Invite message copied to clipboard!");
   };

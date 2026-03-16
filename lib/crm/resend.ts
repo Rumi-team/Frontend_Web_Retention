@@ -25,8 +25,7 @@ export async function sendInviteEmail(
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <p>Hey ${escapeHtml(name)},</p>
-          <p>You've been invited to try Rumi — an AI coaching companion that helps you grow.</p>
-          <p>Your access code: <strong>${escapeHtml(accessCode)}</strong></p>
+          <p>You've been invited to try Rumi &mdash; an AI coaching companion that helps you grow.</p>
           <p>
             <a href="https://rumi.team/login?ref=${encodeURIComponent(accessCode)}"
                style="display:inline-block;padding:12px 24px;background:#facc15;color:#000;text-decoration:none;border-radius:8px;font-weight:600;">

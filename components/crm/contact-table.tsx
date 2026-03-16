@@ -89,7 +89,7 @@ interface Props {
 
 function generateInviteMessage(c: Contact): string {
   const url = `https://rumi.team/login?ref=${encodeURIComponent(c.access_code || "")}`;
-  return `Hey ${c.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow. Your access code: ${c.access_code}\n\nStart here: ${url}`;
+  return `Hey ${c.name}! You're invited to try Rumi \u2014 an AI coaching companion that helps you grow.\n\nStart here: ${url}`;
 }
 
 export default function ContactTable({
