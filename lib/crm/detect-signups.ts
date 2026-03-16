@@ -232,6 +232,113 @@ export async function detectSignups(
   return results;
 }
 
+/**
+ * Discover users who signed up organically (not via CRM invite) and add them.
+ *
+ *   user_identities (Rumi_App)
+ *       │
+ *       ├─ filter out test users (@testuser.rumi.ai)
+ *       ├─ compare against crm_contacts emails
+ *       │
+ *       └─ new users ──> auth.admin.getUserById (name)
+ *                    ──> session_summaries (sessions)
+ *                    ──> INSERT crm_contacts (source='organic')
+ */
+export async function discoverOrganicSignups(): Promise<number> {
+  const rumiApp = createRumiAppClient();
+  const retentionLayer = createRetentionLayerClient();
+
+  // 1. Get all real user identities (exclude test users)
+  const { data: allIdentities } = await rumiApp
+    .from("user_identities")
+    .select("email,user_id,provider_user_id,linked_at")
+    .not("email", "like", "%@testuser.rumi.ai");
+
+  if (!allIdentities || allIdentities.length === 0) return 0;
+
+  // 2. Get all existing CRM contact emails (split comma-separated)
+  const { data: existingContacts } = await retentionLayer
+    .from("crm_contacts")
+    .select("email");
+
+  const existingEmails = new Set<string>();
+  for (const c of existingContacts || []) {
+    if (c.email) {
+      for (const addr of c.email.split(",").map((e: string) => e.trim())) {
+        if (addr) existingEmails.add(addr.toLowerCase());
+      }
+    }
+  }
+
+  // 3. Find users not in CRM
+  const newUsers = allIdentities.filter(
+    (i) => i.email && !existingEmails.has(i.email.toLowerCase())
+  );
+
+  if (newUsers.length === 0) return 0;
+
+  // 4. Batch session lookup for all new users
+  const providerIds = newUsers.map((u) => u.provider_user_id);
+  const { data: sessions } = await rumiApp
+    .from("session_summaries")
+    .select("provider_user_id,duration_minutes,session_started_at")
+    .in("provider_user_id", providerIds);
+
+  const sessionsByProvider = new Map<
+    string,
+    { total: number; minutes: number; first: string; last: string }
+  >();
+  if (sessions) {
+    for (const s of sessions) {
+      const existing = sessionsByProvider.get(s.provider_user_id);
+      const startedAt = s.session_started_at;
+      const minutes = s.duration_minutes || 0;
+      if (!existing) {
+        sessionsByProvider.set(s.provider_user_id, {
+          total: 1, minutes, first: startedAt, last: startedAt,
+        });
+      } else {
+        existing.total++;
+        existing.minutes += minutes;
+        if (startedAt < existing.first) existing.first = startedAt;
+        if (startedAt > existing.last) existing.last = startedAt;
+      }
+    }
+  }
+
+  // 5. Get names and create CRM contacts
+  let created = 0;
+  for (const user of newUsers) {
+    let name = user.email.split("@")[0];
+    try {
+      const { data: authData } = await rumiApp.auth.admin.getUserById(user.user_id);
+      const meta = authData?.user?.user_metadata;
+      if (meta?.name) name = meta.name;
+      else if (meta?.full_name) name = meta.full_name;
+    } catch {
+      // fallback to email prefix
+    }
+
+    const sd = sessionsByProvider.get(user.provider_user_id);
+    const { error } = await retentionLayer
+      .from("crm_contacts")
+      .insert({
+        name,
+        email: user.email,
+        source: "organic",
+        signed_up_at: user.linked_at,
+        first_session_at: sd?.first || null,
+        total_sessions: sd?.total || 0,
+        total_minutes: sd?.minutes || 0,
+        last_session_at: sd?.last || null,
+      });
+
+    if (!error) created++;
+  }
+
+  return created;
+}
+
 export async function updateContactsFromDetection(
   detectionResults: DetectionResult[]
 ): Promise<number> {

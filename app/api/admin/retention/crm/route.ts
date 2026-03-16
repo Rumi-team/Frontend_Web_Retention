@@ -4,6 +4,7 @@ import { createAccessCode } from "@/lib/crm/access-code";
 import {
   detectSignups,
   updateContactsFromDetection,
+  discoverOrganicSignups,
 } from "@/lib/crm/detect-signups";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
   const batchFilter = req.nextUrl.searchParams.get("batch");
   const statusFilter = req.nextUrl.searchParams.get("status");
   const search = req.nextUrl.searchParams.get("q");
+
+  // Auto-discover organic signups (users who signed up without invite)
+  await discoverOrganicSignups();
 
   // Fetch all contacts
   let query = supabase
@@ -35,9 +39,9 @@ export async function GET(req: NextRequest) {
 
   const allContacts = contacts || [];
 
-  // DELIGHT-5: Auto-detect signups for pending contacts
+  // DELIGHT-5: Auto-detect signups for contacts missing signed_up_at
   const pending = allContacts.filter(
-    (c) => c.invited_at && !c.signed_up_at && (c.email || c.access_code)
+    (c) => !c.signed_up_at && (c.email || c.access_code)
   );
 
   if (pending.length > 0) {
