@@ -137,9 +137,12 @@ export default function ContactDetailPage({
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">{contact.name}</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          {contact.email || contact.phone}
-        </p>
+        {contact.email && (
+          <p className="text-sm text-gray-400 mt-1">{contact.email}</p>
+        )}
+        {contact.phone && (
+          <p className="text-sm text-gray-500 mt-0.5">{contact.phone}</p>
+        )}
       </div>
 
       {/* Stats grid */}

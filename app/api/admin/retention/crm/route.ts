@@ -123,11 +123,16 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (email && !EMAIL_REGEX.test(email)) {
-    return NextResponse.json(
-      { error: "Invalid email format" },
-      { status: 400 }
-    );
+  if (email) {
+    const emails = email.split(",").map((e: string) => e.trim()).filter(Boolean);
+    for (const addr of emails) {
+      if (!EMAIL_REGEX.test(addr)) {
+        return NextResponse.json(
+          { error: `Invalid email: ${addr}` },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   // Create access code (inserts into access_codes table too)

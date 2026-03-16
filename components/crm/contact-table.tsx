@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Copy, Link2, Zap } from "lucide-react";
+import { Mail, Copy, Link2, Zap, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Contact {
@@ -12,6 +12,7 @@ interface Contact {
   phone: string | null;
   access_code: string | null;
   batch_name: string | null;
+  notes: string | null;
   invited_at: string | null;
   signed_up_at: string | null;
   first_session_at: string | null;
@@ -82,6 +83,7 @@ interface Props {
   onSendEmail: (contactId: string, type?: string) => void;
   sending?: string | null;
   onCopyMessage?: (contact: Contact) => void;
+  onEdit?: (contact: Contact) => void;
 }
 
 function generateInviteMessage(c: Contact): string {
@@ -95,6 +97,7 @@ export default function ContactTable({
   onSendEmail,
   sending,
   onCopyMessage,
+  onEdit,
 }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
@@ -147,7 +150,15 @@ export default function ContactTable({
                   </Link>
                 </td>
                 <td className="py-2 text-gray-400">
-                  {c.email || c.phone || "\u2014"}
+                  {c.email && (
+                    <div className="text-sm truncate max-w-[200px]" title={c.email}>
+                      {c.email}
+                    </div>
+                  )}
+                  {c.phone && (
+                    <div className="text-xs text-gray-500">{c.phone}</div>
+                  )}
+                  {!c.email && !c.phone && "\u2014"}
                 </td>
                 <td className="py-2 text-gray-500">{c.batch_name || "\u2014"}</td>
                 <td className="py-2">
@@ -166,6 +177,15 @@ export default function ContactTable({
                 <td className="py-2 text-gray-500">{timeAgo(c.last_session_at)}</td>
                 <td className="py-2">
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-gray-400 hover:text-yellow-400"
+                      onClick={() => onEdit?.(c)}
+                      title="Edit contact"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                     {c.email && (
                       <Button
                         variant="ghost"

@@ -113,3 +113,59 @@ export async function GET(
     timeline,
   });
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const body = await req.json();
+  const { name, email, phone, batch_name, notes } = body;
+
+  if (!name || typeof name !== "string") {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  }
+  if (!email && !phone) {
+    return NextResponse.json(
+      { error: "Email or phone is required" },
+      { status: 400 }
+    );
+  }
+
+  // Validate each comma-separated email
+  if (email) {
+    const emails = email.split(",").map((e: string) => e.trim()).filter(Boolean);
+    for (const addr of emails) {
+      if (!EMAIL_REGEX.test(addr)) {
+        return NextResponse.json(
+          { error: `Invalid email: ${addr}` },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
+  const supabase = createRetentionLayerClient();
+
+  const { data, error } = await supabase
+    .from("crm_contacts")
+    .update({
+      name,
+      email: email || null,
+      phone: phone || null,
+      batch_name: batch_name || null,
+      notes: notes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ contact: data });
+}

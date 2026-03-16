@@ -15,6 +15,7 @@ interface Contact {
   phone: string | null;
   access_code: string | null;
   batch_name: string | null;
+  notes: string | null;
   invited_at: string | null;
   signed_up_at: string | null;
   first_session_at: string | null;
@@ -54,6 +55,7 @@ export default function CrmPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+  const [editContact, setEditContact] = useState<Contact | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -99,6 +101,31 @@ export default function CrmPage() {
     } else {
       const err = await res.json();
       showToast(err.error || "Failed to add contact");
+    }
+  };
+
+  const handleEditContact = async (data: {
+    name: string;
+    email: string;
+    phone: string;
+    batch_name: string;
+    notes: string;
+  }) => {
+    if (!editContact) return;
+    setAddLoading(true);
+    const res = await fetch(`/api/admin/retention/crm/${editContact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setAddLoading(false);
+    if (res.ok) {
+      setEditContact(null);
+      showToast("Contact updated");
+      fetchContacts();
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to update contact");
     }
   };
 
@@ -207,6 +234,7 @@ export default function CrmPage() {
           onSendEmail={handleSendEmail}
           sending={sending}
           onCopyMessage={() => showToast("Invite message copied!")}
+          onEdit={(c) => setEditContact(c)}
         />
       )}
 
@@ -216,6 +244,23 @@ export default function CrmPage() {
         onClose={() => setShowAdd(false)}
         onSubmit={handleAddContact}
         loading={addLoading}
+      />
+      <AddContactModal
+        open={!!editContact}
+        onClose={() => setEditContact(null)}
+        onSubmit={handleEditContact}
+        loading={addLoading}
+        initialData={
+          editContact
+            ? {
+                name: editContact.name,
+                email: editContact.email || "",
+                phone: editContact.phone || "",
+                batch_name: editContact.batch_name || "",
+                notes: editContact.notes || "",
+              }
+            : null
+        }
       />
       <ImportModal
         open={showImport}
