@@ -129,6 +129,20 @@ export default function CrmPage() {
     }
   };
 
+  const handleRemoveContact = async (contact: { id: string; name: string }) => {
+    if (!window.confirm(`Remove "${contact.name}" from CRM? This cannot be undone.`)) return;
+    const res = await fetch(`/api/admin/retention/crm/${contact.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      showToast("Contact removed");
+      fetchContacts();
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to remove contact");
+    }
+  };
+
   const handleSendEmail = async (contactId: string, type = "invite") => {
     setSending(contactId);
     const res = await fetch("/api/admin/retention/crm/invite", {
@@ -235,6 +249,7 @@ export default function CrmPage() {
           sending={sending}
           onCopyMessage={() => showToast("Invite message copied!")}
           onEdit={(c) => setEditContact(c)}
+          onRemove={handleRemoveContact}
         />
       )}
 

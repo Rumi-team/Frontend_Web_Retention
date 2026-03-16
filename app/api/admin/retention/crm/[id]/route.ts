@@ -114,6 +114,28 @@ export async function GET(
   });
 }
 
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = createRetentionLayerClient();
+
+  // Delete invites first (FK constraint)
+  await supabase.from("crm_invites").delete().eq("contact_id", id);
+
+  const { error } = await supabase
+    .from("crm_contacts")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function PATCH(

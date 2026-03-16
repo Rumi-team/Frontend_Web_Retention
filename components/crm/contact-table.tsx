@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Copy, Link2, Zap, Pencil } from "lucide-react";
+import { Mail, Copy, Link2, Zap, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Contact {
@@ -84,6 +84,7 @@ interface Props {
   sending?: string | null;
   onCopyMessage?: (contact: Contact) => void;
   onEdit?: (contact: Contact) => void;
+  onRemove?: (contact: Contact) => void;
 }
 
 function generateInviteMessage(c: Contact): string {
@@ -98,6 +99,7 @@ export default function ContactTable({
   sending,
   onCopyMessage,
   onEdit,
+  onRemove,
 }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
@@ -185,6 +187,15 @@ export default function ContactTable({
                       title="Edit contact"
                     >
                       <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-gray-400 hover:text-red-400"
+                      onClick={() => onRemove?.(c)}
+                      title="Remove contact"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                     {c.email && (
                       <Button
