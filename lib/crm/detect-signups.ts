@@ -44,25 +44,34 @@ export async function detectSignups(
   const results: DetectionResult[] = [];
 
   // Step 1: Batch email match against Rumi_App.user_identities
-  const emails = contacts
-    .map((c) => c.email)
-    .filter((e): e is string => e !== null);
+  // Contacts may have comma-separated emails — split and check each
+  const allEmails: string[] = [];
+  for (const c of contacts) {
+    if (!c.email) continue;
+    for (const addr of c.email.split(",").map((e) => e.trim()).filter(Boolean)) {
+      allEmails.push(addr);
+    }
+  }
 
-  const { data: identities } = emails.length > 0
+  const { data: identities } = allEmails.length > 0
     ? await rumiApp
         .from("user_identities")
-        .select("email,user_id,created_at")
-        .in("email", emails)
-    : { data: [] as { email: string; user_id: string; created_at: string }[] };
+        .select("email,user_id,provider_user_id,linked_at")
+        .in("email", allEmails)
+    : { data: [] as { email: string; user_id: string; provider_user_id: string; linked_at: string }[] };
 
   const emailToIdentity = new Map(
     (identities || []).map((i) => [i.email.toLowerCase(), i])
   );
 
   // Step 2: For contacts without email match, try access_code fallback
+  const hasEmailMatch = (email: string | null) => {
+    if (!email) return false;
+    return email.split(",").some((e) => emailToIdentity.has(e.trim().toLowerCase()));
+  };
   const unmatchedWithCode = contacts.filter(
     (c) =>
-      (!c.email || !emailToIdentity.has(c.email.toLowerCase())) &&
+      !hasEmailMatch(c.email) &&
       c.access_code
   );
   const codes = unmatchedWithCode.map((c) => c.access_code!);
@@ -96,50 +105,85 @@ export async function detectSignups(
     }
   }
 
-  // Step 3: Collect all matched user IDs for session lookup
-  const userIdSet = new Set<string>();
-  const contactToUserId = new Map<string, { userId: string; signedUpAt: string }>();
+  // Step 3: Collect all matched users (need provider_user_id for session lookup)
+  const providerIdSet = new Set<string>();
+  const contactToUser = new Map<
+    string,
+    { userId: string; providerUserId: string | null; signedUpAt: string }
+  >();
 
   for (const contact of contacts) {
-    const emailMatch = contact.email
-      ? emailToIdentity.get(contact.email.toLowerCase())
-      : null;
+    // Check all comma-separated emails for a match
+    let emailMatch: (typeof identities extends (infer T)[] | null ? T : never) | null = null;
+    if (contact.email) {
+      for (const addr of contact.email.split(",").map((e) => e.trim()).filter(Boolean)) {
+        const found = emailToIdentity.get(addr.toLowerCase());
+        if (found) { emailMatch = found; break; }
+      }
+    }
     if (emailMatch) {
-      contactToUserId.set(contact.id, {
+      contactToUser.set(contact.id, {
         userId: emailMatch.user_id,
-        signedUpAt: emailMatch.created_at,
+        providerUserId: emailMatch.provider_user_id,
+        signedUpAt: emailMatch.linked_at,
       });
-      userIdSet.add(emailMatch.user_id);
+      if (emailMatch.provider_user_id) {
+        providerIdSet.add(emailMatch.provider_user_id);
+      }
     } else if (contact.access_code && codeToUserId.has(contact.access_code)) {
       const match = codeToUserId.get(contact.access_code)!;
-      contactToUserId.set(contact.id, {
+      contactToUser.set(contact.id, {
         userId: match.userId,
+        providerUserId: null, // resolved in Step 3b
         signedUpAt: match.createdAt,
       });
-      userIdSet.add(match.userId);
     }
   }
 
-  // Step 4: Batch session lookup for all matched users
-  const userIds = [...userIdSet];
-  let sessionsByUser = new Map<
+  // Step 3b: Resolve provider_user_id for code-matched users
+  const codeMatchedUserIds = [...contactToUser.values()]
+    .filter((v) => !v.providerUserId)
+    .map((v) => v.userId);
+
+  if (codeMatchedUserIds.length > 0) {
+    const { data: codeIdentities } = await rumiApp
+      .from("user_identities")
+      .select("user_id,provider_user_id")
+      .in("user_id", codeMatchedUserIds);
+
+    if (codeIdentities) {
+      const userIdToProvider = new Map(
+        codeIdentities.map((i) => [i.user_id, i.provider_user_id])
+      );
+      for (const entry of contactToUser.values()) {
+        if (!entry.providerUserId && userIdToProvider.has(entry.userId)) {
+          entry.providerUserId = userIdToProvider.get(entry.userId)!;
+          providerIdSet.add(entry.providerUserId!);
+        }
+      }
+    }
+  }
+
+  // Step 4: Batch session lookup by provider_user_id (session_summaries key)
+  const providerUserIds = [...providerIdSet];
+  let sessionsByProvider = new Map<
     string,
     { total: number; minutes: number; first: string; last: string }
   >();
 
-  if (userIds.length > 0) {
+  if (providerUserIds.length > 0) {
     const { data: sessions } = await rumiApp
       .from("session_summaries")
-      .select("user_id,duration_minutes,session_started_at")
-      .in("user_id", userIds);
+      .select("provider_user_id,duration_minutes,session_started_at")
+      .in("provider_user_id", providerUserIds);
 
     if (sessions) {
       for (const s of sessions) {
-        const existing = sessionsByUser.get(s.user_id);
+        const existing = sessionsByProvider.get(s.provider_user_id);
         const startedAt = s.session_started_at;
         const minutes = s.duration_minutes || 0;
         if (!existing) {
-          sessionsByUser.set(s.user_id, {
+          sessionsByProvider.set(s.provider_user_id, {
             total: 1,
             minutes,
             first: startedAt,
@@ -157,7 +201,7 @@ export async function detectSignups(
 
   // Step 5: Build results
   for (const contact of contacts) {
-    const match = contactToUserId.get(contact.id);
+    const match = contactToUser.get(contact.id);
     if (!match) {
       results.push({
         contactId: contact.id,
@@ -171,7 +215,9 @@ export async function detectSignups(
       continue;
     }
 
-    const sessionData = sessionsByUser.get(match.userId);
+    const sessionData = match.providerUserId
+      ? sessionsByProvider.get(match.providerUserId)
+      : undefined;
     results.push({
       contactId: contact.id,
       signedUpAt: match.signedUpAt,

@@ -36,25 +36,56 @@ export async function GET(
     transformation_level: number | null;
   }[] = [];
 
-  if (contact.signed_up_at && contact.email) {
+  if (contact.signed_up_at) {
     const rumiApp = createRumiAppClient();
+    let providerUserId: string | null = null;
 
-    // Find user_id from email
-    const { data: identity } = await rumiApp
-      .from("user_identities")
-      .select("user_id")
-      .eq("email", contact.email)
-      .limit(1)
-      .single();
+    // Try email match first — need provider_user_id for session lookups
+    // Contact may have comma-separated emails
+    if (contact.email) {
+      const emailAddrs = contact.email.split(",").map((e: string) => e.trim()).filter(Boolean);
+      const { data: identityRows } = await rumiApp
+        .from("user_identities")
+        .select("user_id,provider_user_id")
+        .in("email", emailAddrs)
+        .limit(1);
+      if (identityRows && identityRows.length > 0) {
+        providerUserId = identityRows[0].provider_user_id;
+      }
+    }
 
-    if (identity) {
-      // Fetch session evaluations for timeline
+    // Fallback: access_code redemption → user_id → provider_user_id
+    if (!providerUserId && contact.access_code) {
+      const { data: codeRow } = await supabase
+        .from("access_codes")
+        .select("id")
+        .eq("code", contact.access_code)
+        .single();
+      if (codeRow) {
+        const { data: redemption } = await supabase
+          .from("access_code_redemptions")
+          .select("user_id")
+          .eq("code_id", codeRow.id)
+          .single();
+        if (redemption) {
+          const { data: identity } = await rumiApp
+            .from("user_identities")
+            .select("provider_user_id")
+            .eq("user_id", redemption.user_id)
+            .limit(1)
+            .single();
+          if (identity) providerUserId = identity.provider_user_id;
+        }
+      }
+    }
+
+    if (providerUserId) {
       const { data: evals } = await rumiApp
         .from("session_evaluations")
         .select(
           "session_duration_minutes,transformation_level,created_at"
         )
-        .eq("provider_user_id", identity.user_id)
+        .eq("provider_user_id", providerUserId)
         .order("created_at", { ascending: true });
 
       if (evals) {
